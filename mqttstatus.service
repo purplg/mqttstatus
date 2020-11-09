@@ -1,0 +1,21 @@
+[Unit]
+Description=MQTT Status Client/Daemon
+After=network.target network-online.target
+Wants=network-online.target
+Requires=network.target
+
+[Service]
+Type=simple
+#WorkingDirectory=/opt/mqttstatus
+ExecStart=/usr/bin/python3 -u /opt/mqttstatus/mqttstatus.py
+#StandardOutput=null
+StandardOutput=syslog
+#SyslogIdentifier=ISPliDet
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

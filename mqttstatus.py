@@ -51,8 +51,7 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     if msg.topic == relativetopic("cmd/power") and msg.payload == bytes("OFF", "utf-8"):
-        print('systemctl poweroff')
-        #os.system('systemctl poweroff')
+        os.system('systemctl poweroff')
     else:
         print("Unknown command:", msg.topic, str(msg.payload))
 

@@ -42,26 +42,27 @@ def config():
         print('Invalid config')
         exit(0)
 
-def fulltopic():
-    return prefix+"/"+topic
+def relativetopic(suffix):
+    return prefix+"/"+topic+"/"+suffix
 
 def on_connect(client, userdata, flags, rc):
     print("connected with result code "+str(rc))
-    client.subscribe(fulltopic()+"/cmd/#")
+    client.subscribe(relativetopic("cmd/#"))
 
 def on_message(client, userdata, msg):
-    if msg.topic == fulltopic()+"/cmd/power" and msg.payload == bytes("OFF", "utf-8"):
-        os.system('systemctl poweroff')
+    if msg.topic == relativetopic("cmd/power") and msg.payload == bytes("OFF", "utf-8"):
+        print('systemctl poweroff')
+        #os.system('systemctl poweroff')
     else:
         print("Unknown command:", msg.topic, str(msg.payload))
 
 def publishUp():
     global client
-    client.publish(fulltopic()+"/state", "ON")
+    client.publish(relativetopic("state"), "ON")
 
 def publishDown():
     global client
-    client.publish(fulltopic()+"/state", "OFF")
+    client.publish(relativetopic("state"), "OFF")
 
 def startMqtt():
     global client
@@ -69,23 +70,20 @@ def startMqtt():
     client.username_pw_set(username, password)
     client.on_connect = on_connect
     client.on_message = on_message
+    client.will_set(relativetopic("state"), "OFF")
     client.connect("10.0.2.3", 1883, 60)
     publishUp()
     client.loop_start()
 
 def aliveTimerHandler():
     publishUp()
-    startTimer()
-
-def startTimer():
-    global aliveTimer
     aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
     aliveTimer.start()
 
-
 config()
 startMqtt()
-startTimer()
+aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
+aliveTimer.start()
 
 try:
     while True:
@@ -93,6 +91,5 @@ try:
 except KeyboardInterrupt:
     exit(0)
 finally:
-    global aliveTimer
     aliveTimer.cancel()
     publishDown()

@@ -106,12 +106,12 @@ class TimerLoop():
 
     def start(self):
         """Start the loop"""
+        self.handler()
         self.thread.start()
 
     def cancel(self):
         """Cancel the loop"""
         self.thread.cancel()
-
 
 # -------------------------------------------------
 # SYSTEM DATA TO BE PUBLISHED
@@ -164,7 +164,6 @@ def exit_gracefully(_signum, _frame):
     CLIENT.disconnect()
     LOOP.cancel()
 
-publish_update()
 
 signal.signal(signal.SIGINT, exit_gracefully)
 signal.signal(signal.SIGTERM, exit_gracefully)

@@ -25,6 +25,7 @@ topic = None
 username = None
 password = None
 client = None
+aliveTimer = None
 
 data = {}
 
@@ -72,15 +73,16 @@ def on_message(client, userdata, msg):
 
 def aliveTimerHandler():
     publishUpdate()
+    global aliveTimer
     aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
     aliveTimer.start()
+
 def publishUpdate():
     getTimestamp()
     getRunningGame()
     getAverageCpuUsage()
     getCpuUsage()
     getMemUsage()
-
     global client
     client.publish(relativetopic("state"), "ON")
     client.publish(relativetopic('data'), json.dumps(data))
@@ -129,6 +131,7 @@ def getRunningGame():
 
 config()
 startMqtt()
+
 aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
 aliveTimer.start()
 
@@ -136,4 +139,3 @@ signal.signal(signal.SIGINT, exit_gracefully)
 signal.signal(signal.SIGTERM, exit_gracefully)
 
 client.loop_forever()
-

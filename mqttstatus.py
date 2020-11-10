@@ -1,17 +1,28 @@
 #!/usr/bin/python3
-
-import sched, sys, os, signal, threading
+import sched
+import sys
+import os
+import signal
+import threading
 import paho.mqtt.client as mqtt
-from time import sleep
 import yaml
+import json
+import psutil
+from time import sleep
+import datetime
+from ewmh import EWMH
 
-UPDATE_INTERVAL = 60
+ewmh = EWMH()
+
+UPDATE_INTERVAL = 5
 
 prefix = None
 topic = None
 username = None
 password = None
 client = None
+
+data = {}
 
 def config():
     try:
@@ -55,9 +66,15 @@ def on_message(client, userdata, msg):
     else:
         print("Unknown command:", msg.topic, str(msg.payload))
 
-def publishUp():
+def publishUpdate():
+    getTimestamp()
+    getRunningGame()
+    getCpuUsage()
+    getMemUsage()
+
     global client
     client.publish(relativetopic("state"), "ON")
+    client.publish(relativetopic('data'), json.dumps(data))
 
 def publishDown():
     global client
@@ -71,13 +88,32 @@ def startMqtt():
     client.on_message = on_message
     client.will_set(relativetopic("state"), "OFF")
     client.connect("10.0.2.3", 1883, 60)
-    publishUp()
+    publishUpdate()
     client.loop_start()
 
 def aliveTimerHandler():
-    publishUp()
+    publishUpdate()
     aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
     aliveTimer.start()
+
+
+def getTimestamp():
+    data['last_updated'] = datetime.datetime.now().isoformat()
+def getCpuUsage():
+    for i, cpu in enumerate(psutil.cpu_percent(None, True)):
+        data[f'cpu{i}'] = cpu
+
+def getMemUsage():
+    data['mem'] = psutil.virtual_memory().percent
+
+def getRunningGame():
+    for win in ewmh.getClientList():
+        name = str(ewmh.getWmName(win), 'utf-8')
+        state = ewmh.getWmState(win, True)
+        if len(state) > 0 and state[0] == '_NET_WM_STATE_FULLSCREEN':
+            data['game'] = name
+            return
+    data['game'] = "None"
 
 config()
 startMqtt()

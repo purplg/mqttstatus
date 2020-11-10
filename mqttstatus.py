@@ -18,12 +18,12 @@ try:
 except error.DisplayNameError:
     ewmh = None
 
-UPDATE_INTERVAL = 60
-
 prefix = None
 topic = None
 username = None
 password = None
+interval = 60
+
 client = None
 aliveTimer = None
 
@@ -32,7 +32,7 @@ data = {}
 def config():
     try:
         with open(r'mqttstatus.yaml') as file:
-            global prefix, topic, username, password
+            global prefix, topic, username, password, interval
             l = yaml.load(file, Loader=yaml.FullLoader)
             try:
                 prefix = l['prefix']
@@ -54,6 +54,10 @@ def config():
             except KeyError:
                 print('Config: Missing password')
                 exit(0)
+            try:
+                interval = l['interval']
+            except KeyError:
+                print('Config: Missing interval. Using default 60')
     except yaml.scanner.ScannerError:
         print('Invalid config')
         exit(0)
@@ -74,7 +78,7 @@ def on_message(client, userdata, msg):
 def aliveTimerHandler():
     publishUpdate()
     global aliveTimer
-    aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
+    aliveTimer = threading.Timer(interval, aliveTimerHandler)
     aliveTimer.start()
 
 def publishUpdate():
@@ -132,7 +136,7 @@ def getRunningGame():
 config()
 startMqtt()
 
-aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
+aliveTimer = threading.Timer(interval, aliveTimerHandler)
 aliveTimer.start()
 
 signal.signal(signal.SIGINT, exit_gracefully)

@@ -69,7 +69,6 @@ def on_message(_client, _userdata, msg):
 
 def publish_update():
     """Builds and sends updated status message to mqtt"""
-    print("publish_update")
     get_timestamp()
     get_running_game()
     get_combined_cpu_usage()
@@ -113,7 +112,6 @@ class TimerLoop():
         """Cancel the loop"""
         self.thread.cancel()
 
-LOOP = TimerLoop(INTERVAL, publish_update)
 
 # -------------------------------------------------
 # SYSTEM DATA TO BE PUBLISHED
@@ -171,6 +169,6 @@ publish_update()
 signal.signal(signal.SIGINT, exit_gracefully)
 signal.signal(signal.SIGTERM, exit_gracefully)
 
+LOOP = TimerLoop(INTERVAL, publish_update)
 LOOP.start()
-
 CLIENT.loop_forever()

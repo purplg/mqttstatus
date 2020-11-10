@@ -11,10 +11,14 @@ import psutil
 from time import sleep
 import datetime
 from ewmh import EWMH
+from Xlib import error
 
-ewmh = EWMH()
+try:
+    ewmh = EWMH()
+except error.DisplayNameError:
+    ewmh = None
 
-UPDATE_INTERVAL = 5
+UPDATE_INTERVAL = 60
 
 prefix = None
 topic = None
@@ -69,6 +73,7 @@ def on_message(client, userdata, msg):
 def publishUpdate():
     getTimestamp()
     getRunningGame()
+    getAverageCpuUsage()
     getCpuUsage()
     getMemUsage()
 
@@ -99,6 +104,8 @@ def aliveTimerHandler():
 
 def getTimestamp():
     data['last_updated'] = datetime.datetime.now().isoformat()
+def getAverageCpuUsage():
+    data['cpu'] = psutil.cpu_percent()
 def getCpuUsage():
     for i, cpu in enumerate(psutil.cpu_percent(None, True)):
         data[f'cpu{i}'] = cpu
@@ -107,13 +114,15 @@ def getMemUsage():
     data['mem'] = psutil.virtual_memory().percent
 
 def getRunningGame():
-    for win in ewmh.getClientList():
-        name = str(ewmh.getWmName(win), 'utf-8')
-        state = ewmh.getWmState(win, True)
-        if len(state) > 0 and state[0] == '_NET_WM_STATE_FULLSCREEN':
-            data['game'] = name
-            return
-    data['game'] = "None"
+    if ewmh:
+        for win in ewmh.getClientList():
+            name = str(ewmh.getWmName(win), 'utf-8')
+            state = ewmh.getWmState(win, True)
+            if len(state) > 0 and state[0] == '_NET_WM_STATE_FULLSCREEN':
+                data['game'] = name
+                break
+        data['game'] = "None"
+
 
 config()
 startMqtt()
@@ -124,7 +133,7 @@ try:
     while True:
         sleep(10000)
 except KeyboardInterrupt:
-    exit(0)
+    sys.exit(0)
 finally:
     aliveTimer.cancel()
     publishDown()

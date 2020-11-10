@@ -1,129 +1,138 @@
 #!/usr/bin/python3
-import sched
 import sys
 import os
 import signal
 import threading
-import paho.mqtt.client as mqtt
 import subprocess
-import yaml
 import json
-import psutil
-from time import sleep
 import datetime
+import yaml
+import psutil
 from ewmh import EWMH
 from Xlib import error
+import paho.mqtt.client as mqtt
 
 try:
     ewmh = EWMH()
 except error.DisplayNameError:
     ewmh = None
 
-prefix = None
-topic = None
-username = None
-password = None
-interval = 60
-
-client = None
-aliveTimer = None
-
 data = {}
 
-def config():
+# -------------------------------------------------
+# CONFIGURATION
+def required(conf, key):
+    """Try to get key from yaml file. Exit if fail"""
     try:
-        with open(r'mqttstatus.yaml') as file:
-            global prefix, topic, username, password, interval
-            l = yaml.load(file, Loader=yaml.FullLoader)
-            try:
-                prefix = l['prefix']
-            except KeyError:
-                print('Config: Missing prefix')
-                exit(0)
-            try:
-                topic = l['topic']
-            except KeyError:
-                print('Config: Missing topic')
-                exit(0)
-            try:
-                username = l['username']
-            except KeyError:
-                print('Config: Missing username')
-                exit(0)
-            try:
-                password = l['password']
-            except KeyError:
-                print('Config: Missing password')
-                exit(0)
-            try:
-                interval = l['interval']
-            except KeyError:
-                print('Config: Missing interval. Using default 60')
-    except yaml.scanner.ScannerError:
-        print('Invalid config')
-        exit(0)
+        return conf[key]
+    except KeyError:
+        print('Config: Missing required key:', key)
+        sys.exit(0)
 
-def relativetopic(suffix):
-    return prefix+"/"+topic+"/"+suffix
+def optional(conf, key, default):
+    """Try to get key from yaml file. Returns default if fail"""
+    try:
+        return conf[key]
+    except KeyError:
+        print('Config: Using default value for missing key:', key)
+        return default
 
-def on_connect(client, userdata, flags, rc):
-    print("connected with result code "+str(rc))
-    client.subscribe(relativetopic("cmd/#"))
+try:
+    with open(r'mqttstatus.yaml') as file:
+        yaml_file = yaml.load(file, Loader=yaml.FullLoader)
+        PREFIX = required(yaml_file, 'prefix')
+        TOPIC = required(yaml_file, 'topic')
+        USERNAME = required(yaml_file, 'username')
+        PASSWORD = required(yaml_file, 'password')
+        INTERVAL = optional(yaml_file, 'interval', 60)
+except yaml.scanner.ScannerError:
+    print('Invalid config format')
+    sys.exit(0)
 
-def on_message(client, userdata, msg):
-    if msg.topic == relativetopic("cmd/power") and msg.payload == bytes("OFF", "utf-8"):
+# -------------------------------------------------
+# MQTT
+def relative_topic(suffix):
+    """Convenience method to combine the prefix, topic, and provided suffix"""
+    return PREFIX+"/"+TOPIC+"/"+suffix
+
+def on_connect(_client, _userdata, _flags, _rc):
+    """Called after mqtt client connects to broker"""
+    print("Connected to mqtt broker")
+    CLIENT.subscribe(relative_topic("cmd/#"))
+
+def on_message(_client, _userdata, msg):
+    """Called after mqtt client receives a message it's subscribed to"""
+    if msg.topic == relative_topic("cmd/power") and msg.payload == bytes("OFF", "utf-8"):
         os.system('systemctl poweroff')
     else:
         print("Unknown command:", msg.topic, str(msg.payload))
 
-def aliveTimerHandler():
-    publishUpdate()
-    global aliveTimer
-    aliveTimer = threading.Timer(interval, aliveTimerHandler)
-    aliveTimer.start()
+def publish_update():
+    """Builds and sends updated status message to mqtt"""
+    print("publish_update")
+    get_timestamp()
+    get_running_game()
+    get_combined_cpu_usage()
+    get_individual_cpu_usage()
+    get_mem_usage()
+    get_battery_percentage()
+    CLIENT.publish(relative_topic("state"), "ON")
+    CLIENT.publish(relative_topic('data'), json.dumps(data))
 
-def publishUpdate():
-    getTimestamp()
-    getRunningGame()
-    getAverageCpuUsage()
-    getCpuUsage()
-    getMemUsage()
-    getBatteryPercent()
-    global client
-    client.publish(relativetopic("state"), "ON")
-    client.publish(relativetopic('data'), json.dumps(data))
+def publish_down():
+    """Informs MQTT that this system state is OFF"""
+    CLIENT.publish(relative_topic("state"), "OFF")
 
-def publishDown():
-    global client
-    client.publish(relativetopic("state"), "OFF")
+CLIENT = mqtt.Client()
+CLIENT.username_pw_set(USERNAME, PASSWORD)
+CLIENT.on_connect = on_connect
+CLIENT.on_message = on_message
+CLIENT.will_set(relative_topic("state"), "OFF")
+CLIENT.connect("10.0.2.3", 1883, 60)
 
-def startMqtt():
-    global client
-    client = mqtt.Client()
-    client.username_pw_set(username, password)
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.will_set(relativetopic("state"), "OFF")
-    client.connect("10.0.2.3", 1883, 60)
-    publishUpdate()
+# -------------------------------------------------
+# LOOP
+class TimerLoop():
+    """Calls the `handler` function ever `interval` seconds"""
 
-def exit_gracefully(signum, frame):
-    publishDown()
-    client.disconnect()
-    aliveTimer.cancel()
-    aliveTimer.join()
+    def __init__(self, interval, handler):
+        self.interval = interval
+        self.handler = handler
+        self.thread = threading.Timer(self.interval, self._tick)
 
-def getTimestamp():
+    def _tick(self):
+        self.handler()
+        self.thread = threading.Timer(self.interval, self._tick)
+        self.thread.start()
+
+    def start(self):
+        """Start the loop"""
+        self.thread.start()
+
+    def cancel(self):
+        """Cancel the loop"""
+        self.thread.cancel()
+
+LOOP = TimerLoop(INTERVAL, publish_update)
+
+# -------------------------------------------------
+# SYSTEM DATA TO BE PUBLISHED
+def get_timestamp():
+    """Populates 'last_updated' key in `data` current timestamp"""
     data['last_updated'] = datetime.datetime.now().isoformat()
-def getAverageCpuUsage():
+def get_combined_cpu_usage():
+    """Populates 'cpu' key in `data` with average cpu usage"""
     data['cpu'] = psutil.cpu_percent()
-def getCpuUsage():
+def get_individual_cpu_usage():
+    """Populates 'cpu#' keys in `data` with each logical cpu's usage"""
     for i, cpu in enumerate(psutil.cpu_percent(None, True)):
         data[f'cpu{i}'] = cpu
 
-def getMemUsage():
+def get_mem_usage():
+    """Populates 'mem' key in `data` with average cpu usage"""
     data['mem'] = psutil.virtual_memory().percent
-def getBatteryPercent():
+def get_battery_percentage():
+    """Populates 'bat#' key in `data` with each battery's current remaining percentage"""
     cmd = 'acpi -b'
     p = subprocess.run(cmd.split(), shell=True, capture_output=True)
     bat_out, err = p.stdout.decode(), p.stderr.decode()
@@ -137,7 +146,8 @@ def getBatteryPercent():
             if len(bat) > 1:
                 data[f'bat{i}'] = bat.split(', ')[1][0:-1]
 
-def getRunningGame():
+def get_running_game():
+    """Populates 'game' key in `data` with the first fullscreen X11 client"""
     if ewmh:
         for win in ewmh.getClientList():
             name = str(ewmh.getWmName(win), 'utf-8')
@@ -148,13 +158,19 @@ def getRunningGame():
         data['game'] = "None"
 
 
-config()
-startMqtt()
+# -------------------------------------------------
+# SHUTDOWN
+def exit_gracefully(_signum, _frame):
+    """Called when application is exiting to notify and gracefully end all threads"""
+    publish_down()
+    CLIENT.disconnect()
+    LOOP.cancel()
 
-aliveTimer = threading.Timer(interval, aliveTimerHandler)
-aliveTimer.start()
+publish_update()
 
 signal.signal(signal.SIGINT, exit_gracefully)
 signal.signal(signal.SIGTERM, exit_gracefully)
 
-client.loop_forever()
+LOOP.start()
+
+CLIENT.loop_forever()

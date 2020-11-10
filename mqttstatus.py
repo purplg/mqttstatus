@@ -70,6 +70,10 @@ def on_message(client, userdata, msg):
     else:
         print("Unknown command:", msg.topic, str(msg.payload))
 
+def aliveTimerHandler():
+    publishUpdate()
+    aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
+    aliveTimer.start()
 def publishUpdate():
     getTimestamp()
     getRunningGame()
@@ -94,13 +98,12 @@ def startMqtt():
     client.will_set(relativetopic("state"), "OFF")
     client.connect("10.0.2.3", 1883, 60)
     publishUpdate()
-    client.loop_start()
 
-def aliveTimerHandler():
-    publishUpdate()
-    aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
-    aliveTimer.start()
-
+def exit_gracefully(signum, frame):
+    publishDown()
+    client.disconnect()
+    aliveTimer.cancel()
+    aliveTimer.join()
 
 def getTimestamp():
     data['last_updated'] = datetime.datetime.now().isoformat()
@@ -129,11 +132,8 @@ startMqtt()
 aliveTimer = threading.Timer(UPDATE_INTERVAL, aliveTimerHandler)
 aliveTimer.start()
 
-try:
-    while True:
-        sleep(10000)
-except KeyboardInterrupt:
-    sys.exit(0)
-finally:
-    aliveTimer.cancel()
-    publishDown()
+signal.signal(signal.SIGINT, exit_gracefully)
+signal.signal(signal.SIGTERM, exit_gracefully)
+
+client.loop_forever()
+

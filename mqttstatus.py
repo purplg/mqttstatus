@@ -5,6 +5,7 @@ import os
 import signal
 import threading
 import paho.mqtt.client as mqtt
+import subprocess
 import yaml
 import json
 import psutil
@@ -87,6 +88,7 @@ def publishUpdate():
     getAverageCpuUsage()
     getCpuUsage()
     getMemUsage()
+    getBatteryPercent()
     global client
     client.publish(relativetopic("state"), "ON")
     client.publish(relativetopic('data'), json.dumps(data))
@@ -121,6 +123,19 @@ def getCpuUsage():
 
 def getMemUsage():
     data['mem'] = psutil.virtual_memory().percent
+def getBatteryPercent():
+    cmd = 'acpi -b'
+    p = subprocess.run(cmd.split(), shell=True, capture_output=True)
+    bat_out, err = p.stdout.decode(), p.stderr.decode()
+    #EXAMPLE OUTPUT:
+    #Battery 0: Unknown, 99%
+    #Battery 1: Discharging, 55%, 03:12:51 remaining
+
+    if not err:
+        bats = bat_out.split('\n')
+        for i, bat in enumerate(bats):
+            if len(bat) > 1:
+                data[f'bat{i}'] = bat.split(', ')[1][0:-1]
 
 def getRunningGame():
     if ewmh:

@@ -72,7 +72,6 @@ def publish_update():
     get_timestamp()
     get_running_game()
     get_combined_cpu_usage()
-    get_individual_cpu_usage()
     get_mem_usage()
     get_battery_percentage()
     CLIENT.publish(relative_topic("state"), "ON")
@@ -80,6 +79,9 @@ def publish_update():
 
 def publish_down():
     """Informs MQTT that this system state is OFF"""
+    data['cpu'] = 0
+    data['mem'] = 0
+    CLIENT.publish(relative_topic('data'), json.dumps(data))
     CLIENT.publish(relative_topic("state"), "OFF")
 
 CLIENT = mqtt.Client()
@@ -121,11 +123,6 @@ def get_timestamp():
 def get_combined_cpu_usage():
     """Populates 'cpu' key in `data` with average cpu usage"""
     data['cpu'] = psutil.cpu_percent()
-def get_individual_cpu_usage():
-    """Populates 'cpu#' keys in `data` with each logical cpu's usage"""
-    for i, cpu in enumerate(psutil.cpu_percent(None, True)):
-        data[f'cpu{i}'] = cpu
-
 def get_mem_usage():
     """Populates 'mem' key in `data` with average cpu usage"""
     data['mem'] = psutil.virtual_memory().percent

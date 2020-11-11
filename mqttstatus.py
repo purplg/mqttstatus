@@ -81,7 +81,7 @@ def publish_down():
     """Informs MQTT that this system state is OFF"""
     data['cpu'] = 0
     data['mem'] = 0
-    CLIENT.publish(relative_topic('data'), json.dumps(data))
+    CLIENT.publish(relative_topic('data'), json.dumps(data), 0, True)
     CLIENT.publish(relative_topic("state"), "OFF")
 
 CLIENT = mqtt.Client()

@@ -40,6 +40,8 @@ def optional(conf, key, default):
 try:
     with open(r'mqttstatus.yaml') as file:
         yaml_file = yaml.load(file, Loader=yaml.FullLoader)
+        MQTT_HOST = required(yaml_file, 'mqtt_host')
+        MQTT_PORT = optional(yaml_file, 'mqtt_port', 1883)
         PREFIX = required(yaml_file, 'prefix')
         TOPIC = required(yaml_file, 'topic')
         USERNAME = required(yaml_file, 'username')
@@ -89,7 +91,7 @@ CLIENT.username_pw_set(USERNAME, PASSWORD)
 CLIENT.on_connect = on_connect
 CLIENT.on_message = on_message
 CLIENT.will_set(relative_topic("state"), "OFF")
-CLIENT.connect("10.0.2.3", 1883, 60)
+CLIENT.connect(MQTT_HOST, MQTT_PORT, 60)
 
 # -------------------------------------------------
 # LOOP

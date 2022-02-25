@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 import sys
 import os
 import signal
@@ -21,21 +22,29 @@ data = {}
 
 # -------------------------------------------------
 # CONFIGURATION
+
+
 def required(conf, key):
-    """Try to get key from yaml file. Exit if fail"""
+    """
+    Try to get key from yaml file. Exit if fail
+    """
     try:
         return conf[key]
     except KeyError:
         print('Config: Missing required key:', key)
         sys.exit(0)
 
+
 def optional(conf, key, default):
-    """Try to get key from yaml file. Returns default if fail"""
+    """
+    Try to get key from yaml file. Returns default if fail
+    """
     try:
         return conf[key]
     except KeyError:
         print('Config: Using default value for missing key:', key)
         return default
+
 
 try:
     with open(r'mqttstatus.yaml') as file:
@@ -53,24 +62,37 @@ except yaml.scanner.ScannerError:
 
 # -------------------------------------------------
 # MQTT
+
+
 def relative_topic(suffix):
-    """Convenience method to combine the prefix, topic, and provided suffix"""
+    """
+    Convenience method to combine the prefix, topic, and provided suffix
+    """
     return PREFIX+"/"+TOPIC+"/"+suffix
 
+
 def on_connect(_client, _userdata, _flags, _rc):
-    """Called after mqtt client connects to broker"""
+    """
+    Called after mqtt client connects to broker
+    """
     print("Connected to mqtt broker")
     CLIENT.subscribe(relative_topic("cmd/#"))
 
+
 def on_message(_client, _userdata, msg):
-    """Called after mqtt client receives a message it's subscribed to"""
+    """
+    Called after mqtt client receives a message it's subscribed to
+    """
     if msg.topic == relative_topic("cmd/power") and msg.payload == bytes("OFF", "utf-8"):
         os.system('systemctl poweroff')
     else:
         print("Unknown command:", msg.topic, str(msg.payload))
 
+
 def publish_update():
-    """Builds and sends updated status message to mqtt"""
+    """
+    Builds and sends updated status message to mqtt
+    """
     get_timestamp()
     get_running_game()
     get_combined_cpu_usage()
@@ -79,12 +101,16 @@ def publish_update():
     CLIENT.publish(relative_topic("state"), "ON")
     CLIENT.publish(relative_topic('data'), json.dumps(data))
 
+
 def publish_down():
-    """Informs MQTT that this system state is OFF"""
+    """
+    Informs MQTT that this system state is OFF
+    """
     data['cpu'] = 0
     data['mem'] = 0
     CLIENT.publish(relative_topic('data'), json.dumps(data), 0, True)
     CLIENT.publish(relative_topic("state"), "OFF")
+
 
 CLIENT = mqtt.Client()
 CLIENT.username_pw_set(USERNAME, PASSWORD)
@@ -95,8 +121,12 @@ CLIENT.connect(MQTT_HOST, MQTT_PORT, 60)
 
 # -------------------------------------------------
 # LOOP
+
+
 class TimerLoop():
-    """Calls the `handler` function ever `interval` seconds"""
+    """
+    Calls the `handler` function ever `interval` seconds
+    """
 
     def __init__(self, interval, handler):
         self.interval = interval
@@ -109,33 +139,54 @@ class TimerLoop():
         self.thread.start()
 
     def start(self):
-        """Start the loop"""
+        """
+        Start the loop
+        """
         self.handler()
         self.thread.start()
 
     def cancel(self):
-        """Cancel the loop"""
+        """
+        Cancel the loop
+        """
         self.thread.cancel()
 
 # -------------------------------------------------
 # SYSTEM DATA TO BE PUBLISHED
+
+
 def get_timestamp():
-    """Populates 'last_updated' key in `data` current timestamp"""
+    """
+    Populates 'last_updated' key in `data` current timestamp
+    """
     data['last_updated'] = datetime.datetime.now().isoformat()
+
+
 def get_combined_cpu_usage():
-    """Populates 'cpu' key in `data` with average cpu usage"""
+    """
+    Populates 'cpu' key in `data` with average cpu usage
+    """
     data['cpu'] = psutil.cpu_percent()
+
+
 def get_mem_usage():
-    """Populates 'mem' key in `data` with average cpu usage"""
+    """
+    Populates 'mem' key in `data` with average cpu usage
+    """
     data['mem'] = psutil.virtual_memory().percent
+
+
 def get_battery_percentage():
-    """Populates 'bat#' key in `data` with each battery's current remaining percentage"""
+    """
+    Populates 'bat#' key in `data` with each battery's current remaining
+    percentage
+    """
     cmd = 'acpi -b'
     p = subprocess.run(cmd.split(), shell=True, capture_output=True)
     bat_out, err = p.stdout.decode(), p.stderr.decode()
-    #EXAMPLE OUTPUT:
-    #Battery 0: Unknown, 99%
-    #Battery 1: Discharging, 55%, 03:12:51 remaining
+    # EXAMPLE OUTPUT:
+    # Battery 0: Unknown, 99%
+    # Battery 1: Discharging, 55%, 03:12:51 remaining
 
     if not err:
         bats = bat_out.split('\n')
@@ -143,8 +194,11 @@ def get_battery_percentage():
             if len(bat) > 1:
                 data[f'bat{i}'] = bat.split(', ')[1][0:-1]
 
+
 def get_running_game():
-    """Populates 'game' key in `data` with the first fullscreen X11 client"""
+    """
+    Populates 'game' key in `data` with the first fullscreen X11 client
+    """
     if ewmh:
         for win in ewmh.getClientList():
             name = str(ewmh.getWmName(win), 'utf-8')
@@ -158,7 +212,9 @@ def get_running_game():
 # -------------------------------------------------
 # SHUTDOWN
 def exit_gracefully(_signum, _frame):
-    """Called when application is exiting to notify and gracefully end all threads"""
+    """
+    Called when application is exiting to notify and gracefully end all threads
+    """
     publish_down()
     CLIENT.disconnect()
     LOOP.cancel()

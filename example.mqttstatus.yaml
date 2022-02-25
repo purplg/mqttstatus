@@ -1,0 +1,17 @@
+### Required. IP address of the MQTT Broker.
+# mqtt_host: 10.0.0.2
+mqtt_host:
+
+### Port for the MQTT Broker.
+#mqtt_port: 1883
+
+### Required. Topic.
+prefix: "home"
+topic: "pc/desktop"
+
+### Required. Credentials for this that this client will user to authenticate to the MQTT Broken
+username:
+password:
+
+### How often (seconds) this client will send system information to the MQTT Broker
+#interval: 60

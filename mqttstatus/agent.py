@@ -1,12 +1,10 @@
-import datetime
 import os
 import json
-import subprocess
-import psutil
 
 import paho.mqtt.client as mqtt
 
 from mqttstatus.loop import TimerLoop
+from mqttstatus.data import SystemData
 
 
 class MQTTAgent():
@@ -24,7 +22,7 @@ class MQTTAgent():
         self.prefix = prefix
         self.topic = topic
         self.interval = interval
-        self.data = {}
+        self.data = SystemData()
 
         self.client = mqtt.Client()
         self.client.username_pw_set(username, password)
@@ -81,54 +79,12 @@ class MQTTAgent():
         """
         Builds and sends updated status message to mqtt
         """
-        self.get_timestamp()
-        self.get_combined_cpu_usage()
-        self.get_mem_usage()
-        self.get_battery_percentage()
         self.publish("state", "ON")
-        self.publish('data', json.dumps(self.data))
+        self.publish('data', json.dumps(self.data.get()))
 
     def publish_down(self):
         """
         Informs MQTT that this system state is OFF
         """
-        self.data['cpu'] = 0
-        self.data['mem'] = 0
-        self.publish('data', json.dumps(self.data), 0, True)
+        self.publish('data', json.dumps(self.data.get()), 0, True)
         self.publish("state", "OFF")
-
-    def get_timestamp(self):
-        """
-        Populates 'last_updated' key in `data` current timestamp
-        """
-        self.data['last_updated'] = datetime.datetime.now().isoformat()
-
-    def get_combined_cpu_usage(self):
-        """
-        Populates 'cpu' key in `data` with average cpu usage
-        """
-        self.data['cpu'] = psutil.cpu_percent()
-
-    def get_mem_usage(self):
-        """
-        Populates 'mem' key in `data` with average cpu usage
-        """
-        self.data['mem'] = psutil.virtual_memory().percent
-
-    def get_battery_percentage(self):
-        """
-        Populates 'bat#' key in `data` with each battery's current remaining
-        percentage
-        """
-        cmd = 'acpi -b'
-        p = subprocess.run(cmd.split(), shell=True, capture_output=True)
-        bat_out, err = p.stdout.decode(), p.stderr.decode()
-        # EXAMPLE OUTPUT:
-        # Battery 0: Unknown, 99%
-        # Battery 1: Discharging, 55%, 03:12:51 remaining
-
-        if not err:
-            bats = bat_out.split('\n')
-            for i, bat in enumerate(bats):
-                if len(bat) > 1:
-                    self.data[f'bat{i}'] = bat.split(', ')[1][0:-1]

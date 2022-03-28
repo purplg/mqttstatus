@@ -66,7 +66,7 @@ class MQTTAgent():
         self.update_loop.start()
         self.client.loop_forever()
 
-    def stop(self, _signum, _frame):
+    def stop(self):
         """
         Called when application is exiting to notify and gracefully end all threads
         """

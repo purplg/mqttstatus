@@ -7,8 +7,12 @@ from mqttstatus.config import MQTTStatusConfig
 
 def main(config: MQTTStatusConfig):
     agent = MQTTAgent(config.host, config.port, config.username, config.password, config.prefix, config.topic, config.interval)
-    signal.signal(signal.SIGINT, agent.stop)
-    signal.signal(signal.SIGTERM, agent.stop)
+
+    def exit(_signum, _frame):
+        agent.stop()
+
+    signal.signal(signal.SIGINT, exit)
+    signal.signal(signal.SIGTERM, exit)
     agent.run()
 
 

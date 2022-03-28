@@ -7,7 +7,7 @@ Requires=network.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/mqttstatus
-ExecStart=/opt/mqttstatus/venv/bin/python3 -u /opt/mqttstatus/mqttstatus.py
+ExecStart=/opt/mqttstatus/.venv/bin/python3 -u /opt/mqttstatus/bin/mqttstatus
 #StandardOutput=null
 StandardOutput=syslog
 #SyslogIdentifier=ISPliDet

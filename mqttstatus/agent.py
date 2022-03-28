@@ -74,6 +74,15 @@ class MQTTAgent():
         self.publish_down()
         self.client.disconnect()
 
+    def subscribe(self, topic_suffix: str):
+        self.client.subscribe(self.relative_topic(topic_suffix))
+
+    def publish(self, topic_suffix: str, payload: str, qos: int = 0, retain: bool = False):
+        self.client.publish(self.relative_topic(topic_suffix),
+                            payload,
+                            qos,
+                            retain)
+
     def relative_topic(self, suffix):
         """
         Convenience method to combine the prefix, topic, and provided suffix
@@ -85,7 +94,7 @@ class MQTTAgent():
         Called after mqtt client connects to broker
         """
         print("Connected to mqtt broker")
-        self.client.subscribe(self.relative_topic("cmd/#"))
+        self.subscribe("cmd/#")
 
     def on_message(self, _client, _userdata, msg):
         """
@@ -104,8 +113,8 @@ class MQTTAgent():
         self.get_combined_cpu_usage()
         self.get_mem_usage()
         self.get_battery_percentage()
-        self.client.publish(self.relative_topic("state"), "ON")
-        self.client.publish(self.relative_topic('data'), json.dumps(self.data))
+        self.publish("state", "ON")
+        self.publish('data', json.dumps(self.data))
 
     def publish_down(self):
         """
@@ -113,8 +122,8 @@ class MQTTAgent():
         """
         self.data['cpu'] = 0
         self.data['mem'] = 0
-        self.client.publish(self.relative_topic('data'), json.dumps(self.data), 0, True)
-        self.client.publish(self.relative_topic("state"), "OFF")
+        self.publish('data', json.dumps(self.data), 0, True)
+        self.publish("state", "OFF")
 
     def get_timestamp(self):
         """

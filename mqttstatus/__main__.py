@@ -3,7 +3,6 @@ import sys
 
 from mqttstatus.agent import MQTTAgent
 from mqttstatus.config import MQTTStatusConfig
-from mqttstatus.log import logger
 
 
 def main(config: MQTTStatusConfig):

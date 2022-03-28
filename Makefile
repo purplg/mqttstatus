@@ -10,6 +10,10 @@ setup:
 	/usr/bin/python3 -m venv .venv
 	${PIP} install -r requirements.txt
 
+install: setup
+	mkdir -p /opt/mqttstatus
+	cp -r . /opt/mqttstatus
+
 clean:
-	rm -r ./.venv
+	rm -rf ./.venv
 

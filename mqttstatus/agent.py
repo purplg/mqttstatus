@@ -25,6 +25,8 @@ class MQTTAgent():
         self.interval = interval
         self.data = SystemData()
 
+        self.update_loop = TimerLoop(self.interval, self.publish_update)
+
         self.client = mqtt.Client()
         self.client.username_pw_set(username, password)
         self.client.on_connect = self.on_connect
@@ -33,7 +35,6 @@ class MQTTAgent():
 
     def run(self):
         self.client.connect(self.host, self.port, 60)
-        self.update_loop = TimerLoop(self.interval, self.publish_update)
         self.update_loop.start()
         self.client.loop_forever()
 

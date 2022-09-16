@@ -80,7 +80,7 @@ class MQTTStatusConfig(dict):
         return self['topic']
 
     @property
-    def interval(self) -> str:
+    def interval(self) -> int:
         return self['interval']
 
     @property

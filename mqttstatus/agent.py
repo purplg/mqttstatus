@@ -50,10 +50,12 @@ class MQTTAgent():
         self.client.subscribe(self.relative_topic(topic_suffix))
 
     def publish(self, topic_suffix: str, payload: str, qos: int = 0, retain: bool = False):
-        self.client.publish(self.relative_topic(topic_suffix),
-                            payload,
-                            qos,
-                            retain)
+        self.client.publish(
+            topic=self.relative_topic(topic_suffix),
+            payload=payload,
+            qos=qos,
+            retain=retain
+        )
 
     def relative_topic(self, suffix):
         """

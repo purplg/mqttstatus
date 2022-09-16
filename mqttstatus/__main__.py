@@ -6,7 +6,15 @@ from mqttstatus.config import MQTTStatusConfig
 
 
 def main(config: MQTTStatusConfig):
-    agent = MQTTAgent(config.host, config.port, config.username, config.password, config.prefix, config.topic, config.interval)
+    agent = MQTTAgent(
+        config.host,
+        config.port,
+        config.username,
+        config.password,
+        config.prefix,
+        config.topic,
+        config.interval
+    )
 
     def exit(_signum, _frame):
         agent.stop()

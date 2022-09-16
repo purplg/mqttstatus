@@ -8,7 +8,7 @@ from mqttstatus.data import SystemData
 from mqttstatus.log import logger
 
 
-class MQTTAgent():
+class MQTTAgent(mqtt.Client):
 
     def __init__(self,
                  host: str,
@@ -18,6 +18,7 @@ class MQTTAgent():
                  prefix: str,
                  topic: str,
                  interval: int = 5):
+        super().__init__()
         self.host = host
         self.port = port
         self.prefix = prefix
@@ -27,16 +28,13 @@ class MQTTAgent():
 
         self.update_loop = TimerLoop(self.interval, self.publish_update)
 
-        self.client = mqtt.Client()
-        self.client.username_pw_set(username, password)
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
-        self.client.will_set(self.relative_topic("state"), "OFF")
+        self.username_pw_set(username, password)
+        self.will_set(self.relative_topic("state"), "OFF")
 
     def run(self):
-        self.client.connect(self.host, self.port, 60)
+        self.connect(self.host, self.port, 60)
         self.update_loop.start()
-        self.client.loop_forever()
+        self.loop_forever()
 
     def stop(self):
         """
@@ -44,13 +42,13 @@ class MQTTAgent():
         """
         self.update_loop.cancel()
         self.publish_down()
-        self.client.disconnect()
+        self.disconnect()
 
     def subscribe(self, topic_suffix: str):
-        self.client.subscribe(self.relative_topic(topic_suffix))
+        super().subscribe(self.relative_topic(topic_suffix))
 
     def publish(self, topic_suffix: str, payload: str, qos: int = 0, retain: bool = False):
-        self.client.publish(
+        super().publish(
             topic=self.relative_topic(topic_suffix),
             payload=payload,
             qos=qos,

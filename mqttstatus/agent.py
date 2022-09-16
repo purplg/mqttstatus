@@ -72,8 +72,27 @@ class MQTTAgent(mqtt.Client):
         """
         Called after mqtt client receives a message it's subscribed to
         """
-        if msg.topic == self.relative_topic("cmd/power") and msg.payload == bytes("OFF", "utf-8"):
-            os.system('systemctl poweroff')
+        if msg.topic == self.relative_topic("cmd/power"):
+            if msg.payload == bytes("OFF", "utf-8"):
+                os.system('systemctl poweroff')
+        elif msg.topic == self.relative_topic("cmd/notify"):
+            data = msg.payload.decode('utf-8')
+            data = json.loads(data)
+            body = data.get('body')
+            if body is None:
+                logger.warning(f"Received notification message missing body: {data}")
+                return
+
+            time = data.get('time', 5000)
+            urgency = data.get('urgency', 'low')
+            transient = data.get('transient', False)
+
+            cmd = f"notify-send --expire-time={time} --urgency={urgency} \"{body}\""
+            if transient:
+                cmd += " --transient"
+
+            if os.system(cmd) > 0:
+                logger.warning(f"Error running command: {cmd}")
         else:
             logger.error("Unknown command: ", msg.topic, str(msg.payload))
 

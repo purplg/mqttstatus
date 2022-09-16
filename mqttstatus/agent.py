@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 
 from mqttstatus.loop import TimerLoop
 from mqttstatus.data import SystemData
+from mqttstatus.log import logger
 
 
 class MQTTAgent():
@@ -63,7 +64,7 @@ class MQTTAgent():
         """
         Called after mqtt client connects to broker
         """
-        print("Connected to mqtt broker")
+        logger.info("Connected to mqtt broker")
         self.subscribe("cmd/#")
 
     def on_message(self, _client, _userdata, msg):
@@ -73,7 +74,7 @@ class MQTTAgent():
         if msg.topic == self.relative_topic("cmd/power") and msg.payload == bytes("OFF", "utf-8"):
             os.system('systemctl poweroff')
         else:
-            print("Unknown command:", msg.topic, str(msg.payload))
+            logger.error("Unknown command: ", msg.topic, str(msg.payload))
 
     def publish_update(self):
         """

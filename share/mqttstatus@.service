@@ -6,8 +6,10 @@ Requires=network.target
 
 [Service]
 Type=simple
+User=%i
+Group=%i
 WorkingDirectory=/opt/mqttstatus
-execstart=/opt/mqttstatus/.venv/bin/python3 -u /opt/mqttstatus/bin/mqttstatus -c /opt/mqttstatus/conf/mqttstatus.yml
+ExecStart=/opt/mqttstatus/.venv/bin/python3 -u /opt/mqttstatus/bin/mqttstatus -c /opt/mqttstatus/conf/mqttstatus.yml
 StandardError=journal
 Environment=PYTHONUNBUFFERED=1
 Restart=always

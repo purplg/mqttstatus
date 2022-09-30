@@ -1,4 +1,3 @@
-import os
 import json
 
 import paho.mqtt.client as mqtt
@@ -6,6 +5,7 @@ import paho.mqtt.client as mqtt
 from mqttstatus.loop import TimerLoop
 from mqttstatus.data import SystemData
 from mqttstatus.log import logger
+from mqttstatus import modules
 
 
 class MQTTAgent(mqtt.Client):
@@ -27,9 +27,16 @@ class MQTTAgent(mqtt.Client):
         self.data = SystemData()
 
         self.update_loop = TimerLoop(self.interval, self.publish_update)
-
         self.username_pw_set(username, password)
         self.will_set(self.relative_topic("state"), "OFF")
+
+        self.modules = [
+            modules.Poweroff(),
+            modules.Notify(),
+        ] 
+
+        for module in self.modules:
+            module.start()
 
     def run(self):
         self.connect(self.host, self.port, 60)
@@ -68,33 +75,15 @@ class MQTTAgent(mqtt.Client):
         logger.info("Connected to mqtt broker")
         self.subscribe("cmd/#")
 
-    def on_message(self, _client, _userdata, msg):
+    def on_message(self, client, userdata, msg):
         """
         Called after mqtt client receives a message it's subscribed to
         """
-        if msg.topic == self.relative_topic("cmd/power"):
-            if msg.payload == bytes("OFF", "utf-8"):
-                os.system('systemctl poweroff')
-        elif msg.topic == self.relative_topic("cmd/notify"):
-            data = msg.payload.decode('utf-8')
-            data = json.loads(data)
-            body = data.get('body')
-            if body is None:
-                logger.warning(f"Received notification message missing body: {data}")
-                return
+        cmd = msg.topic.removeprefix(self.relative_topic("cmd/"))
+        payload = msg.payload.decode('utf-8')
 
-            time = data.get('time', 5000)
-            urgency = data.get('urgency', 'low')
-            transient = data.get('transient', False)
-
-            cmd = f"notify-send --expire-time={time} --urgency={urgency} \"{body}\""
-            if transient:
-                cmd += " --transient"
-
-            if os.system(cmd) > 0:
-                logger.warning(f"Error running command: {cmd}")
-        else:
-            logger.error("Unknown command: ", msg.topic, str(msg.payload))
+        for module in self.modules:
+            module.on_mqtt(cmd, payload)
 
     def publish_update(self):
         """

@@ -1,7 +1,7 @@
 import threading
 
 
-class TimerLoop():
+class TimerLoop:
     """
     Calls the `handler` function ever `interval` seconds
     """

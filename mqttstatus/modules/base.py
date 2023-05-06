@@ -2,8 +2,8 @@ import abc
 from threading import Thread
 from mqttstatus.log import logger
 
-class Module(abc.ABC):
 
+class Module(abc.ABC):
     def start(self):
         logger.info(f"Starting module: '{self.__class__.__name__}'")
 

@@ -13,7 +13,7 @@ def main(config: MQTTStatusConfig):
         config.password,
         config.prefix,
         config.topic,
-        config.interval
+        config.interval,
     )
 
     def exit(_signum, _frame):

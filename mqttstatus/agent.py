@@ -9,15 +9,16 @@ from mqttstatus import modules
 
 
 class MQTTAgent(mqtt.Client):
-
-    def __init__(self,
-                 host: str,
-                 port: int,
-                 username: str,
-                 password: str,
-                 prefix: str,
-                 topic: str,
-                 interval: int = 5):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        username: str,
+        password: str,
+        prefix: str,
+        topic: str,
+        interval: int = 5,
+    ):
         super().__init__()
         self.host = host
         self.port = port
@@ -33,7 +34,7 @@ class MQTTAgent(mqtt.Client):
         self.modules = [
             modules.Poweroff(),
             modules.Notify(),
-        ] 
+        ]
 
         for module in self.modules:
             module.start()
@@ -54,19 +55,21 @@ class MQTTAgent(mqtt.Client):
     def subscribe(self, topic_suffix: str):
         super().subscribe(self.relative_topic(topic_suffix))
 
-    def publish(self, topic_suffix: str, payload: str, qos: int = 0, retain: bool = False):
+    def publish(
+        self, topic_suffix: str, payload: str, qos: int = 0, retain: bool = False
+    ):
         super().publish(
             topic=self.relative_topic(topic_suffix),
             payload=payload,
             qos=qos,
-            retain=retain
+            retain=retain,
         )
 
     def relative_topic(self, suffix):
         """
         Convenience method to combine the prefix, topic, and provided suffix
         """
-        return self.prefix+"/"+self.topic+"/"+suffix
+        return self.prefix + "/" + self.topic + "/" + suffix
 
     def on_connect(self, _client, _userdata, _flags, _rc):
         """
@@ -80,7 +83,7 @@ class MQTTAgent(mqtt.Client):
         Called after mqtt client receives a message it's subscribed to
         """
         cmd = msg.topic.removeprefix(self.relative_topic("cmd/"))
-        payload = msg.payload.decode('utf-8')
+        payload = msg.payload.decode("utf-8")
 
         for module in self.modules:
             module.on_mqtt(cmd, payload)
@@ -90,11 +93,11 @@ class MQTTAgent(mqtt.Client):
         Builds and sends updated status message to mqtt
         """
         self.publish("state", "ON")
-        self.publish('data', json.dumps(self.data.get()))
+        self.publish("data", json.dumps(self.data.get()))
 
     def publish_down(self):
         """
         Informs MQTT that this system state is OFF
         """
-        self.publish('data', json.dumps(self.data.get()), 0, True)
+        self.publish("data", json.dumps(self.data.get()), 0, True)
         self.publish("state", "OFF")

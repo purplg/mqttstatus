@@ -4,15 +4,14 @@ import psutil
 
 
 class SystemData:
-
     data: dict = {}
 
     def get(self):
-        self.data['last_updated'] = self.timestamp
-        self.data['cpu'] = self.cpu_usage
-        self.data['mem'] = self.memory
+        self.data["last_updated"] = self.timestamp
+        self.data["cpu"] = self.cpu_usage
+        self.data["mem"] = self.memory
         for i, bat in enumerate(list(self.battery)):
-            self.data[f'bat{i}'] = bat
+            self.data[f"bat{i}"] = bat
         return self.data
 
     @property
@@ -42,7 +41,7 @@ class SystemData:
         Populates 'bat#' key in `data` with each battery's current remaining
         percentage
         """
-        cmd = 'acpi -b'
+        cmd = "acpi -b"
         p = subprocess.run(cmd.split(), shell=True, capture_output=True)
         acpi_out, err = p.stdout.decode(), p.stderr.decode()
         # EXAMPLE OUTPUT:
@@ -52,5 +51,6 @@ class SystemData:
         if err:
             return []
 
-        return map(lambda line: line.split(', ')[1][0:-1],
-                acpi_out.rstrip().split('\n'))
+        return map(
+            lambda line: line.split(", ")[1][0:-1], acpi_out.rstrip().split("\n")
+        )

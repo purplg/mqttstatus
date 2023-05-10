@@ -324,6 +324,42 @@ files = [
 ]
 
 [[package]]
+name = "types-paho-mqtt"
+version = "1.6.0.6"
+description = "Typing stubs for paho-mqtt"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-paho-mqtt-1.6.0.6.tar.gz", hash = "sha256:c2c263ee33010b23b2c53c1a6c4b4515ba6f94e8fa391e969c0e8cdd0256de49"},
+    {file = "types_paho_mqtt-1.6.0.6-py3-none-any.whl", hash = "sha256:c1314b3571fe7699f5e545f83c860a9a1edb885237649afe243dd0aca2f0d725"},
+]
+
+[[package]]
+name = "types-psutil"
+version = "5.9.5.12"
+description = "Typing stubs for psutil"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-psutil-5.9.5.12.tar.gz", hash = "sha256:61a91679d3fe737250013b624dca09375e7cc3ad77dcc734553746c429c02aca"},
+    {file = "types_psutil-5.9.5.12-py3-none-any.whl", hash = "sha256:e9a147b8561235c6afcce5aa1adb973fad9ab2c50cf89820697687f53510358f"},
+]
+
+[[package]]
+name = "types-pyyaml"
+version = "6.0.12.9"
+description = "Typing stubs for PyYAML"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-PyYAML-6.0.12.9.tar.gz", hash = "sha256:c51b1bd6d99ddf0aa2884a7a328810ebf70a4262c292195d3f4f9a0005f9eeb6"},
+    {file = "types_PyYAML-6.0.12.9-py3-none-any.whl", hash = "sha256:5aed5aa66bd2d2e158f75dda22b059570ede988559f030cf294871d3b647e3e8"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.5.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -338,4 +374,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "042529ab40135a4cdcb4c0274a17c1fba2e26553f04761d4e6391ae201476789"
+content-hash = "7041c31568508b4eaabff08ea4f8b5ee6b6d35c8258983bda132d088e483ebe3"

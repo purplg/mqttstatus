@@ -52,12 +52,10 @@ class MQTTAgent(mqtt.Client):
         self.publish_down()
         self.disconnect()
 
-    def subscribe(self, topic_suffix: str):
+    def subscribe(self, topic_suffix):
         super().subscribe(self.relative_topic(topic_suffix))
 
-    def publish(
-        self, topic_suffix: str, payload: str, qos: int = 0, retain: bool = False
-    ):
+    def publish(self, topic_suffix, payload, qos=0, retain=False):
         super().publish(
             topic=self.relative_topic(topic_suffix),
             payload=payload,

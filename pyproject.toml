@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "mqttstatus"
+version = "0.1.0"
+description = "Control a computer via MQTT"
+authors = ["Ben Whitley <dev@purplg.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.scripts]
+main = "mqttstatus:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+paho-mqtt = "^1.6.1"
+psutil = "^5.9.5"
+python-xlib = "^0.33"
+PyYAML = "^6.0"
+six = "^1.16.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+mypy = "^1.2.0"
+isort = "^5.12.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

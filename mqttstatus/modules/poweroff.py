@@ -1,7 +1,6 @@
 import os
 
 from .base import Module
-from mqttstatus.log import logger
 
 
 class Poweroff(Module):

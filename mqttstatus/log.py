@@ -7,7 +7,12 @@ logger = logging.getLogger(__name__)
 
 def setup_logging(verbose=False):
     log_fmt_debug = logging.Formatter(
-        "%(levelname)-8s %(asctime)s [%(module)s.%(funcName)s:%(lineno)s]:%(message)s"
+        (
+            "%(levelname)-8s "
+            "%(asctime)s "
+            "[%(module)s.%(funcName)s:%(lineno)s]"
+            ":%(message)s"
+        )
     )
     log_fmt = log_fmt_debug if verbose else logging.Formatter("%(message)s")
 

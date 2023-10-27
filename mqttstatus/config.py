@@ -22,7 +22,12 @@ class MQTTStatusConfig(dict):
             type=pathlib.Path,
             default=pathlib.Path("./conf/mqttstatus.yaml"),
         )
-        parser.add_argument("-v", "--verbose", action="store_true", default=None)
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            action="store_true",
+            default=None,
+        )
 
         # General Options
         parser.add_argument("--host", type=str)

@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.scripts]
-main = "mqttstatus:main"
+mqttstatus = "mqttstatus:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
